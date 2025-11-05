@@ -124,19 +124,7 @@ clean_docker_contain_log(){
     read -n 1
 }
 
-clean_by_user(){
-   # 手动清理大文件
-   echo -e "${BLUE}==================================${NC}"
-    echo -e "${GREEN} 手动清理大文件-您可以新开一个窗口使用下方命令           ${NC}"
-    echo -e "\n1、手动搜索大文件,如超过200m的文件:sudo find / -size +200M -type f           ${NC}"
-    echo -e "2、手动按需删除搜索到的大文件,如:sudo rm /var/log/mysql/access.log           ${NC}"
-    echo -e "${BLUE}==================================${NC}"
-    echo -e "当前系统超过200m文件:${NC}"
-    find / -size +200M -type f
-    echo -e "${BLUE}==================================${NC}"
-    echo -e "\n${GREEN}按任意键返回主菜单...${NC}"
-    read -n 1
-}
+
 
 clean_desktop_trash(){
     # 清理存在桌面环境(GNOME/KDE等)的用户级回收站
@@ -158,14 +146,14 @@ clean_desktop_trash(){
     echo "${dir}"/files
     ls -l "${dir}"/files
     echo "============================"
-    read -p "清空桌面回收站？[y/N]:" ans
+    read -p "清空桌面回收站?[y/N]:" ans
     if [[ $ans == [yY] ]]; then
         # rm -rf "${dir}"/{files,info}/*
         /bin/rm -rf "${dir}"/files/* 
         /bin/rm -rf "${dir}"/info/*
-        echo "  ✓ 已清空桌面回收站"
+        echo "✓ 已清空桌面回收站"
     else
-        echo "  - 未清空桌面回收站"
+        echo "- 未清空桌面回收站"
     fi
     echo "============================"
     echo "${dir}"/files
@@ -194,18 +182,20 @@ clean_bt_trash(){
         echo "文件数：$file_num   大小：$size"
         ls -l "$dir"
         echo "============================"
-        read -p "清空该宝塔回收站？[y/N]:" ans
+        read -p "清空该宝塔回收站?[y/N]:" ans
         if [[ $ans == [yY] ]]; then
             rm -rf "${dir:?}"/*
-            echo "  ✓ 宝塔回收站 $dir 已清空"
+            echo "✓ 宝塔回收站 $dir 已清空"
         else
-            echo "  - 跳过宝塔回收站 $dir"
+            echo "- 跳过宝塔回收站 $dir"
         fi
     done
     
     echo -e "\n${GREEN}按任意键返回主菜单...${NC}"
     read -n 1
 }
+
+
 
 clean_system_all() {
     echo -e "${BLUE}==================================${NC}"
@@ -324,6 +314,63 @@ clean_system_all() {
     read -n 1
 } 
 
+clean_by_user(){
+   # 手动清理大文件
+   echo -e "${BLUE}==================================${NC}"
+    echo -e "${GREEN}手动清理大文件-您可以新开一个窗口使用下方命令           ${NC}"
+    echo -e "\n1、手动搜索大文件,如超过200m的文件:sudo find / -size +200M -type f           ${NC}"
+    echo -e "2、手动按需删除搜索到的大文件,如:sudo rm /var/log/mysql/access.log           ${NC}"
+    echo -e "${BLUE}==================================${NC}"
+    echo -e "当前系统超过200m的文件:${NC}"
+    find / -size +200M -type f
+    echo -e "${BLUE}==================================${NC}"
+    echo -e "拓展1:命令lsof | grep delet 发现刚刚删除文件的进程存在,自行kill -f掉进程号    ${NC}"
+    echo -e "拓展2:查看某目录下占用存储和文件:du /www/ -h --max-depth=1 | sort -gr    ${NC}"
+    echo -e "${BLUE}==================================${NC}"
+    echo -e "\n${GREEN}按任意键返回主菜单...${NC}"
+    read -n 1
+}
+
+clean_vmware(){
+    # Vmware虚拟机压缩
+    echo -e "${BLUE}==================================${NC}"
+    echo -e "${GREEN}Vmware虚拟机压缩:           ${NC}"
+    echo -e "${GREEN}把磁盘清零空闲空间,让[宿主机]回收[虚拟机]中空闲存储,压缩[虚拟机]在[宿主机]中的真实存储空间  ${NC}"
+    echo -e "${BLUE}==================================${NC}"
+    sleep 1
+    echo -e "\n${GREEN}[1/4] 手动删除本虚拟机存在的快照(若有须删除):${NC}"
+    echo -e "Vmware的GUI按钮:顶部按钮'管理此虚拟机的快照' → 若存在'快照n' →右键删除"
+    sleep 1
+    echo -e "${BLUE}==================================${NC}"
+    echo -e "\n${GREEN}[2/4] 清零空闲空间(命令:dd if=/dev/zero of=/zero bs=1M; sync; rm -f /zero):${NC}"
+    echo -e "把磁盘剩余空间全部写成0在/zero,执行中提示“设备无空间”属正常,结束后空间会立刻恢复  ${NC}"
+
+    read -p "是否清零空闲空间?[y/N]:" ans
+        if [[ $ans == [yY] ]]; then
+            dd if=/dev/zero of=/zero bs=1M; sync; rm -f /zero
+            # 每次写 1 MiB。一直写到磁盘满为止。因为 `dd` 默认不限制大小。
+            echo -e "\n"
+            echo "${GREEN}✓ 成功清零空闲空间${NC}"
+        else
+            echo -e "\n"
+            echo "- 跳过清零空闲空间"
+        fi
+
+    echo -e "${BLUE}==================================${NC}"
+    echo -e "\n${GREEN}[3/4] 虚拟机关机:${NC}"
+    echo -e "请手动对本Vmware虚拟机关机"
+    sleep 1
+    echo -e "${BLUE}==================================${NC}"
+    echo -e "\n${GREEN}[4/4] 宿主机中压缩:${NC}"
+    echo -e "方式1: Vmware的GUI按钮:虚拟机设置 → 硬盘 → '压缩磁盘以回收未使用的空间'"
+    echo -e "方式2: 宿主机中使用命令vmware-vdiskmanager -k 虚拟机.vmdk"
+    
+    echo -e "${BLUE}==================================${NC}"
+    echo -e "\n${GREEN}按任意键返回主菜单...${NC}"
+    read -n 1
+}
+
+
 # 菜单窗口
 show_clean_system_menu(){
     echo -e "${BLUE}==================================${NC}"
@@ -334,16 +381,18 @@ show_clean_system_menu(){
     echo -e "${BLUE}==================================${NC}"
     echo -e "${GREEN}1.${NC} 一键系统清理(包含下面2~6)"
     echo -e "${GREEN}2.${NC} 清理临时文件(保留socket/pid/lock)"
-    echo -e "${GREEN}3.${NC} 清理软件包缓存(因系统而异)"
+    echo -e "${GREEN}3.${NC} 清理软件包缓存"
     echo -e "${GREEN}4.${NC} 清理系统日志"
     echo -e "${GREEN}5.${NC} 清理用户缓存"
     echo -e "${GREEN}6.${NC} 清理docker容器日志"
-    echo -e "${GREEN}7.${NC} 清理回收站(桌面回收站)"
-    echo -e "${GREEN}8.${NC} 清理回收站(宝塔回收站)"
+    echo -e "${GREEN}7.${NC} 清理桌面回收站"
+    echo -e "${GREEN}8.${NC} 清理宝塔回收站"
     echo -e "${GREEN}9.${NC} 手动清理大文件"
+    echo -e "${GREEN}10.${NC} Vmware虚拟机压缩(回收空闲存储)"
+    echo -e "${GREEN}11.${NC} 磁盘挂载与管理(beta)"
     echo -e "${BLUE}==================================${NC}"
     echo -e "${RED}PS: 请勿在重要生产环境使用本程序!${NC}"
-    echo -e "请输入选项 [1-9] 或按 'b' 返回上级: "
+    echo -e "请输入选项 [1-11] 或按 'b' 返回上级: "
 }
 
 # 主函数
@@ -389,7 +438,13 @@ clean_system_main() {
                 ;;  
             9)
                 clean_by_user
-                ;;              
+                ;; 
+            10)
+                clean_vmware
+                ;;
+            11)
+                source "disk_mount.sh"
+                ;;                 
             b|B)
                 break
                 ;;
