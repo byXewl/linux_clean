@@ -13,12 +13,22 @@ NC='\033[0m'
 # 清理系统垃圾函数
 clean_tmp(){
     # 清理临时目录
-    echo -e "${GREEN}[开始] 清理临时文件目录:${NC}"
-    echo -e "清理临时文件 (${BLUE}/tmp/*${NC})"
-    rm -rf /tmp/* 2>/dev/null
-    echo -e "清理临时文件 (${BLUE}/var/tmp/*${NC})"
-    rm -rf /var/tmp/* 2>/dev/null
+    echo -e "${GREEN}[开始] 清理临时文件目录(保留socket/pid/lock)${NC}"
 
+    # 1. 找出正在被进程打开的文件（socket/pid/lock 等）
+    local keep=$(mktemp)
+    # lsof 列出的绝对路径去重后存临时文件
+    lsof +D /tmp /var/tmp 2>/dev/null | awk '{print $9}' | sort -u > "$keep"
+
+    # 2. 逐个删除 /tmp 里的文件/目录，跳过“正在使用”的
+    for f in /tmp/* /var/tmp/*; do
+        [[ -e $f ]] || continue          # 通配符找不到文件会原样返回，要跳过
+        grep -Fxq "$f" "$keep" && continue   # 如果正在被使用，跳过
+        rm -rf "$f" 2>/dev/null
+    done
+
+    rm -f "$keep"
+    echo -e "${GREEN}临时目录已清理(保留socket/pid/lock)${NC}"
     echo -e "\n${GREEN}按任意键返回主菜单...${NC}"
     read -n 1
 }
@@ -121,6 +131,9 @@ clean_by_user(){
     echo -e "\n1、手动搜索大文件,如超过200m的文件:sudo find / -size +200M -type f           ${NC}"
     echo -e "2、手动按需删除搜索到的大文件,如:sudo rm /var/log/mysql/access.log           ${NC}"
     echo -e "${BLUE}==================================${NC}"
+    echo -e "当前系统超过200m文件:${NC}"
+    find / -size +200M -type f
+    echo -e "${BLUE}==================================${NC}"
     echo -e "\n${GREEN}按任意键返回主菜单...${NC}"
     read -n 1
 }
@@ -199,22 +212,26 @@ clean_system_all() {
     echo -e "${YELLOW}          一键系统清理          ${NC}"
     echo -e "${BLUE}==================================${NC}"
     
-    # 需要root权限
-    if [ "$EUID" -ne 0 ]; then 
-        echo -e "${RED}请使用root权限运行此命令${NC}"
-        read -n 1
-        return 1
-    fi
-       
     echo -e "\n${YELLOW}准备开始清理系统...${NC}\n"
-
+    sleep 1
     
     # 1. 清理临时目录
-    echo -e "${GREEN}[1/5] 清理临时文件目录:${NC}"
-    echo -e "清理临时文件 (${BLUE}/tmp/*${NC})"
-    rm -rf /tmp/* 2>/dev/null
-    echo -e "清理临时文件 (${BLUE}/var/tmp/*${NC})"
-    rm -rf /var/tmp/* 2>/dev/null
+    echo -e "${GREEN}[1/5] 清理临时文件目录(保留socket/pid/lock):${NC}"
+ 
+    # 找出正在被进程打开的文件（socket/pid/lock 等）
+    local keep=$(mktemp)
+    # lsof 列出的绝对路径去重后存临时文件
+    lsof +D /tmp /var/tmp 2>/dev/null | awk '{print $9}' | sort -u > "$keep"
+
+    # 逐个删除 /tmp 里的文件/目录，跳过“正在使用”的
+    for f in /tmp/* /var/tmp/*; do
+        [[ -e $f ]] || continue          # 通配符找不到文件会原样返回，要跳过
+        grep -Fxq "$f" "$keep" && continue   # 如果正在被使用，跳过
+        rm -rf "$f" 2>/dev/null
+    done
+
+    rm -f "$keep"
+    echo -e "${GREEN}临时目录已清理(保留socket/pid/lock)${NC}"
     
     # 2. 清理软件包缓存（针对不同的Linux发行版）
     echo -e "\n${GREEN}[2/5] 清理软件包缓存:${NC}"
@@ -279,7 +296,7 @@ clean_system_all() {
      echo -e "\n${GREEN}[5/5] 清理docker容器日志:${NC}"
     echo "======== 开始清理docker容器日志 ========"  
 
-    logs=$(find /var/lib/docker/containers/ -name *-json.log)  
+    logs=$(find /var/lib/docker/containers/ -name "*-json.log")  
     for log in $logs  
             do  
                     echo "clean logs : $log"  
@@ -293,7 +310,7 @@ clean_system_all() {
     echo -e "\n${GREEN}系统清理完成！${NC}"
     echo -e "${BLUE}==================================${NC}"
     echo -e "清理项目包括:"
-    echo -e "1. 临时文件 (/tmp/*, /var/tmp/*)"
+    echo -e "1. 临时文件 (/tmp/*, /var/tmp/*, 保留socket/pid/lock)"
     echo -e "2. 软件包缓存 (因系统而异，不影响正常包使用)"
     echo -e "3. 系统日志 (journalctl或/var/log/)"
     echo -e "4. 用户缓存 (~/.cache/*)"
@@ -316,7 +333,7 @@ show_clean_system_menu(){
     df -h | awk 'NR==1 || /^\/dev\//'
     echo -e "${BLUE}==================================${NC}"
     echo -e "${GREEN}1.${NC} 一键系统清理(包含下面2~6)"
-    echo -e "${GREEN}2.${NC} 清理临时文件"
+    echo -e "${GREEN}2.${NC} 清理临时文件(保留socket/pid/lock)"
     echo -e "${GREEN}3.${NC} 清理软件包缓存(因系统而异)"
     echo -e "${GREEN}4.${NC} 清理系统日志"
     echo -e "${GREEN}5.${NC} 清理用户缓存"
@@ -325,6 +342,7 @@ show_clean_system_menu(){
     echo -e "${GREEN}8.${NC} 清理回收站(宝塔回收站)"
     echo -e "${GREEN}9.${NC} 手动清理大文件"
     echo -e "${BLUE}==================================${NC}"
+    echo -e "${RED}PS: 请勿在重要生产环境使用本程序!${NC}"
     echo -e "请输入选项 [1-9] 或按 'b' 返回上级: "
 }
 
