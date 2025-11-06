@@ -390,7 +390,7 @@ show_clean_system_menu(){
     echo -e "${GREEN}8.${NC} 清理宝塔回收站"
     echo -e "${GREEN}9.${NC} 手动清理大文件"
     echo -e "${GREEN}10.${NC} Vmware虚拟机压缩(回收空闲存储)"
-    echo -e "${GREEN}11.${NC} 磁盘挂载与管理(beta)"
+    echo -e "${GREEN}11.${NC} 磁盘扩展与管理(beta)"
     echo -e "${BLUE}==================================${NC}"
     echo -e "${RED}PS: 请勿在重要生产环境使用本程序!${NC}"
     echo -e "请输入选项 [1-11] 或按 'b' 返回上级: "

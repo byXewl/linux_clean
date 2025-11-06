@@ -504,7 +504,7 @@ manage_disk_mount() {
 
     while true; do
         echo -e "${BLUE}==================================${NC}"
-        echo -e "${YELLOW}         磁盘挂载与管理         ${NC}"
+        echo -e "${YELLOW}         磁盘扩展与管理         ${NC}"
         echo -e "${BLUE}==================================${NC}"
         echo -e "${GREEN}1.${NC} 查看所有块设备信息(磁盘分区)"
         echo -e "${GREEN}2.${NC} 扩展旧的磁盘分区"
