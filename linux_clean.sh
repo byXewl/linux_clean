@@ -315,16 +315,17 @@ clean_system_all() {
 } 
 
 clean_by_user(){
-   # 手动清理大文件
-   echo -e "${BLUE}==================================${NC}"
+    # 手动清理大文件
+    echo -e "${BLUE}==================================${NC}"
     echo -e "${GREEN}手动清理大文件-您可以新开一个窗口使用下方命令           ${NC}"
     echo -e "\n1、手动搜索大文件,如超过200m的文件:sudo find / -size +200M -type f           ${NC}"
     echo -e "2、手动按需删除搜索到的大文件,如:sudo rm /var/log/mysql/access.log           ${NC}"
     echo -e "${BLUE}==================================${NC}"
     echo -e "当前系统超过200m的文件:${NC}"
+    sleep 1
     find / -size +200M -type f
     echo -e "${BLUE}==================================${NC}"
-    echo -e "拓展1:命令lsof | grep delet 发现刚刚删除文件的进程存在,自行kill -f掉进程号    ${NC}"
+    echo -e "拓展1:使用命令lsof | grep delet查看删除文件的进程若存在,可自行kill -f掉进程号    ${NC}"
     echo -e "拓展2:查看某目录下占用存储和文件:du /www/ -h --max-depth=1 | sort -gr    ${NC}"
     echo -e "${BLUE}==================================${NC}"
     echo -e "\n${GREEN}按任意键返回主菜单...${NC}"
@@ -443,7 +444,7 @@ clean_system_main() {
                 clean_vmware
                 ;;
             11)
-                source "disk_mount.sh"
+                source "./lib/disk_mount.sh"
                 ;;                 
             b|B)
                 break

@@ -123,7 +123,29 @@ list_block_devices() {
         return 1
     fi
     
+    echo -e "${BLUE}==================================${NC}"
+    echo -e "${GREEN}磁盘的分区表${NC}"
+    lsblk -fp
+    echo -e "${BLUE}==================================${NC}"
+    echo -e "${GREEN}当前磁盘使用情况${NC}"
+    df -h | awk 'NR==1 || /^\/dev\//'
+    echo -e "${BLUE}==================================${NC}"
     return 0
+}
+
+fdisk_partition(){
+    list_block_devices "all"
+    echo -e "${GREEN}=== 扩展磁盘分区 ===${NC}"
+    echo -e "\n若sda > sda1+sda2+...+sdaN。则机器、VMware等扩容只是把磁盘sda变大了,已有的分区表和文件系统没有自动扩展  \n${NC}"
+    echo -e "${GREEN}=== 示例:手动扩展sda2等旧分区和对应的文件系统 ===${NC}"
+    echo -e "\n扩展分区(如把sda2扩展到占满sda):利用fdisk命令 1.删除sda2(不会丢数据,因为是LVM)。2.新建一个分区，起始位置一样(默认start)，结束位置用默认值(默认占满）
+            \n刷新分区表: partprobe
+            \n扩展更新物理卷: pvresize /dev/sda2
+            \n扩展更新逻辑卷(比如根分区): lvextend -l +100%FREE /dev/mapper/centos-root
+            \n扩展更新文件系统: 如 xfs_growfs /
+            \n即可df -h查看情况
+            "
+   echo -e "${GREEN}=== 具体不同操作系统的命令请咨询AI ===${NC}"
 }
 
 
@@ -296,8 +318,8 @@ unmount_partition() {
     # -N /: 排除根目录
     # --real: 排除虚拟文件系统
     local raw_mounted_info
-    # raw_mounted_info=$(findmnt -lno SOURCE,TARGET,FSTYPE --real -t nosysfs,noproc,nodevtmpfs,notmpfs,noramfs,nodevpts,nooverlay,nosquashfs | grep -vE '^tmpfs|^overlay|^squashfs|(/run|/dev|/sys|/proc|/snap|/boot|/$ )')
-    raw_mounted_info=$(findmnt -lno SOURCE,TARGET,FSTYPE -R -t nosysfs,noproc,nodevtmpfs,notmpfs,noramfs,nodevpts,nooverlay,nosquashfs | grep -vE '^tmpfs|^overlay|^squashfs|(/run|/dev|/sys|/proc|/snap|/boot|/$ )')
+    raw_mounted_info=$(findmnt -lno SOURCE,TARGET,FSTYPE --real -t nosysfs,noproc,nodevtmpfs,notmpfs,noramfs,nodevpts,nooverlay,nosquashfs | grep -vE '^tmpfs|^overlay|^squashfs|(/run|/dev|/sys|/proc|/snap|/boot|/$ )')
+    # raw_mounted_info=$(findmnt -lno SOURCE,TARGET,FSTYPE -R -t nosysfs,noproc,nodevtmpfs,notmpfs,noramfs,nodevpts,nooverlay,nosquashfs | grep -vE '^tmpfs|^overlay|^squashfs|(/run|/dev|/sys|/proc|/snap|/boot|/$ )')
     # raw_mounted_info=$(findmnt -lno SOURCE,TARGET,FSTYPE | grep '^/dev/' | grep -vE '^tmpfs|^overlay|^squashfs|(/run|/dev|/sys|/proc|/snap|/boot|/$ )')
     if [ -z "$raw_mounted_info" ]; then
         echo -e "${YELLOW}没有找到可供卸载的用户自定义挂载点。${NC}"
@@ -466,7 +488,6 @@ manage_disk_mount() {
     done
 
     if [ ${#missing_deps[@]} -ne 0 ]; then
-        clear
         echo -e "${RED}错误：执行此功能所需的命令未找到:${NC}"
         for dep in "${missing_deps[@]}"; do
             echo -e "  - ${YELLOW}$dep${NC}"
@@ -482,29 +503,38 @@ manage_disk_mount() {
     fi
 
     while true; do
-        clear
         echo -e "${BLUE}==================================${NC}"
         echo -e "${YELLOW}         磁盘挂载与管理         ${NC}"
         echo -e "${BLUE}==================================${NC}"
-        echo -e "${GREEN}1.${NC} 挂载新的磁盘分区"
-        echo -e "${GREEN}2.${NC} 卸载已挂载的分区"
-        echo -e "${GREEN}3.${NC} 查看所有块设备信息"
-        echo -e "${GREEN}4.${NC} 管理 /etc/fstab (查看/检查)"
+        echo -e "${GREEN}1.${NC} 查看所有块设备信息(磁盘分区)"
+        echo -e "${GREEN}2.${NC} 扩展旧的磁盘分区"
+        echo -e "${GREEN}3.${NC} 挂载新的磁盘分区"
+        echo -e "${GREEN}4.${NC} 卸载已挂载的分区"
+        echo -e "${GREEN}5.${NC} 查看所有块设备信息"
+        echo -e "${GREEN}6.${NC} 管理 /etc/fstab (查看/检查)"
         echo -e "${GREEN}0.${NC} 返回上级菜单"
         echo -e "${BLUE}==================================${NC}"
         read -rp "请输入选项: " main_choice
 
         case $main_choice in
             1)
-                mount_partition
+                list_block_devices "all"
+                # mount_partition
                 ;;
             2)
-                unmount_partition
+                fdisk_partition
+                # mount_partition
                 ;;
             3)
-                list_block_devices "all"
+                mount_partition
                 ;;
             4)
+                unmount_partition
+                ;;
+            5)
+                list_block_devices "all"
+                ;;
+            6)
                 manage_fstab
                 ;;
             0)
