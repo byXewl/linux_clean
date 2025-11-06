@@ -14,6 +14,10 @@ Vmware清理空间
 Vmware虚拟机存储清理
 Vmware存储清理
 Vmware压缩
+Vmware扩容
+Vmware磁盘扩展
+虚拟机扩容
+虚拟机磁盘扩展
 ```
 chmod 777 ./linux_clean.sh
 sudo ./linux_clean.sh
