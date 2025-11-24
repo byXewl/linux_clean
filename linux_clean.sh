@@ -351,7 +351,7 @@ clean_vmware(){
             dd if=/dev/zero of=/zero bs=1M; sync; rm -f /zero
             # 每次写 1 MiB。一直写到磁盘满为止。因为 `dd` 默认不限制大小。
             echo -e "\n"
-            echo "${GREEN}✓ 成功清零空闲空间${NC}"
+            echo -e "${GREEN}✓ 成功清零空闲空间${NC}"
         else
             echo -e "\n"
             echo "- 跳过清零空闲空间"
@@ -365,6 +365,8 @@ clean_vmware(){
     echo -e "\n${GREEN}[4/4] 宿主机中压缩:${NC}"
     echo -e "方式1: Vmware的GUI按钮:虚拟机设置 → 硬盘 → '压缩磁盘以回收未使用的空间'"
     echo -e "方式2: 宿主机中使用命令vmware-vdiskmanager -k 虚拟机.vmdk"
+    echo -e "\n"
+    echo -e "此时虚拟机外部实际存储大小就变成和内部存储大小一致，若未成功使用命令执行看是否报错"
     
     echo -e "${BLUE}==================================${NC}"
     echo -e "\n${GREEN}按任意键返回主菜单...${NC}"
